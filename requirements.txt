@@ -2,5 +2,4 @@ fastapi
 uvicorn
 sqlmodel
 passlib
-python-jose[cryptography]
-bcrypt
+pyjwt
