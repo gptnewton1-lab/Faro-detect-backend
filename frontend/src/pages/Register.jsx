@@ -1,0 +1,92 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+const API_URL = "https://faro-detect-api-1.onrender.com";
+
+export default function Register() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      // Register
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Auto-login after registration
+        const loginRes = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const loginData = await loginRes.json();
+        if (loginRes.ok) {
+          localStorage.setItem('access_token', loginData.access_token);
+          navigate('/dashboard');
+        } else {
+          navigate('/login');
+        }
+      } else {
+        setError(data.detail || 'Registration failed');
+      }
+    } catch {
+      setError('Server error. Is backend running?');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-gray-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl p-8 rounded-3xl border border-white/10 shadow-2xl">
+        <div className="text-center mb-8">
+          <Link to="/" className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            🛡️ Faro-Detect
+          </Link>
+          <p className="text-gray-400 text-sm mt-1">Create your account</p>
+        </div>
+        <form onSubmit={handleRegister} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 bg-white/10 rounded-xl border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 bg-white/10 rounded-xl border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition disabled:opacity-50"
+          >
+            {loading ? 'Creating account...' : 'Create Account'}
+          </button>
+          {error && <p className="text-center text-sm text-red-400">{error}</p>}
+        </form>
+        <p className="text-center text-sm text-gray-400 mt-4">
+          Already have an account? <Link to="/login" className="text-blue-400 hover:underline">Sign In</Link>
+        </p>
+        <div className="mt-8 text-center text-xs text-gray-600 border-t border-white/5 pt-6">
+          Built with ❤️ for Cameroon · Presidential ICT Prize 2026
+        </div>
+      </div>
+    </div>
+  );
+}
