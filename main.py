@@ -1,40 +1,136 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlmodel import SQLModel, Field, Relationship, Session, create_engine, select
-from datetime import datetime, timedelta
-from typing import Optional, List
-import re
-import jwt
-from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session, select
+from typing import List
 
-# --- Database Setup ---
-DATABASE_URL = "sqlite:///faro_detect.db"
-engine = create_engine(DATABASE_URL, echo=True)
+from models import (
+    User, UserCreate, UserRead, ScanHistory, ScanHistoryRead,
+    Token, get_session, create_db_and_tables
+)
+from auth import (
+    get_password_hash, verify_password, create_access_token,
+    get_current_user, get_current_active_user
+)
+from detection import run_detection
 
-def get_session():
-    with Session(engine) as session:
-        yield session
 
-# --- Models ---
-class UserBase(SQLModel):
-    email: str = Field(index=True, unique=True, nullable=False)
+app = FastAPI(
+    title="Faro-Detect API",
+    description="Scam detection API for Mobile Money, phishing, and fake notifications in Cameroon.",
+    version="0.1.0",
+)
 
-class User(UserBase, table=True):
-    __tablename__ = "users"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    hashed_password: str
-    is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    scans: List["ScanHistory"] = Relationship(back_populates="owner")
 
-class UserCreate(UserBase):
-    password: str
+# --- CORS ---
+origins = ["*"]  # Replace with your Vercel URL later
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class UserRead(UserBase):
-    id: int
-    is_active: bool
-    created_at: datetime
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+
+# --- Auth Routes ---
+@app.post("/auth/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def register(user_in: UserCreate, session: Session = Depends(get_session)):
+    existing_user = session.exec(select(User).where(User.email == user_in.email)).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = User(email=user_in.email, hashed_password=get_password_hash(user_in.password))
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@app.post("/auth/login", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.email == form_data.username)).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": user.email})
+    return Token(access_token=access_token, token_type="bearer")
+
+
+# --- Scan Routes ---
+@app.post("/scan", response_model=ScanHistoryRead, status_code=status.HTTP_201_CREATED)
+def scan_message(
+    message: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+):
+    if not message or not message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    result = run_detection(message)
+    scan = ScanHistory(
+        message=message,
+        user_id=current_user.id,
+        **result,
+    )
+    session.add(scan)
+    session.commit()
+    session.refresh(scan)
+    return scan
+
+
+@app.get("/scan/history", response_model=List[ScanHistoryRead])
+def get_history(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+):
+    statement = (
+        select(ScanHistory)
+        .where(ScanHistory.user_id == current_user.id)
+        .order_by(ScanHistory.timestamp.desc())
+    )
+    return session.exec(statement).all()
+
+
+# --- Health Check ---
+@app.get("/")
+def read_root():
+    return {"status": "ok", "service": "Faro-Detect API"}        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    result = run_detection(message)
+    scan = ScanHistory(
+        message=message,
+        user_id=current_user.id,
+        **result,
+    )
+    session.add(scan)
+    session.commit()
+    session.refresh(scan)
+    return scan
+
+
+@app.get("/scan/history", response_model=List[ScanHistoryRead])
+def get_history(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
+):
+    statement = (
+        select(ScanHistory)
+        .where(ScanHistory.user_id == current_user.id)
+        .order_by(ScanHistory.timestamp.desc())
+    )
+    return session.exec(statement).all()
+
+
+# --- Health Check ---
+@app.get("/")
+def read_root():
+    return {"status": "ok", "service": "Faro-Detect API"}    created_at: datetime
 
 class UserLogin(SQLModel):
     email: str
