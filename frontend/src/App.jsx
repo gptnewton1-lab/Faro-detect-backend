@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // !!! CHANGE THIS TO YOUR RENDER BACKEND URL !!!
-const API_URL = "http://localhost:8000"; 
+const API_URL = "https://faro-detect-api-1.onrender.com";
 
 function App() {
   const [email, setEmail] = useState('');
