@@ -3,38 +3,69 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const API_URL = "https://faro-detect-api-1.onrender.com";
 
-export default function Register() {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      // Register
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
       if (res.ok) {
-        // Auto-login after registration
-        const loginRes = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const loginData = await loginRes.json();
-        if (loginRes.ok) {
-          localStorage.setItem('access_token', loginData.access_token);
-          navigate('/dashboard');
-        } else {
-          navigate('/login');
+        localStorage.setItem('access_token', data.access_token);
+        navigate('/dashboard');
+      } else {
+        setError(data.detail || 'Login failed');
+      }
+    } catch {
+      setError('Server error');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
+      <div className="bg-gray-800 p-8 rounded-2xl w-full max-w-md">
+        <h1 className="text-3xl font-bold text-center mb-6">Sign In</h1>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 text-white focus:outline-none focus:border-blue-500"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 text-white focus:outline-none focus:border-blue-500"
+            required
+          />
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold disabled:opacity-50">
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        </form>
+        <p className="text-center text-gray-400 mt-4 text-sm">
+          Don't have an account? <Link to="/register" className="text-blue-400 hover:underline">Register</Link>
+        </p>
+      </div>
+    </div>
+  );
+}          navigate('/login');
         }
       } else {
         setError(data.detail || 'Registration failed');
