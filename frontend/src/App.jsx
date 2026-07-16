@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // !!! CHANGE THIS TO YOUR RENDER BACKEND URL !!!
-const API_URL = "https://faro-detect-api-1.onrender.com";
+const API_URL = "https://faro-detect-api-1.onrender.com"; 
 
 function App() {
   const [email, setEmail] = useState('');
@@ -37,7 +37,19 @@ function App() {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      setAuthMsg(res.ok ? '✅ Registered! Please login.' : '❌ ' + data.detail);
+      if (res.ok) {
+        setAuthMsg('✅ Registered! Please Login.');
+      } else {
+        let errMsg = 'Registration failed';
+        if (data.detail) {
+          if (Array.isArray(data.detail)) {
+            errMsg = data.detail.map(d => d.msg).join(', ');
+          } else {
+            errMsg = data.detail;
+          }
+        }
+        setAuthMsg('❌ ' + errMsg);
+      }
     } catch (e) {
       setAuthMsg('❌ Server error. Is backend running?');
     }
@@ -59,7 +71,15 @@ function App() {
         setUserEmail(email);
         setAuthMsg('');
       } else {
-        setAuthMsg('❌ ' + (data.detail || 'Login failed'));
+        let errMsg = 'Login failed';
+        if (data.detail) {
+          if (Array.isArray(data.detail)) {
+            errMsg = data.detail.map(d => d.msg).join(', ');
+          } else {
+            errMsg = data.detail;
+          }
+        }
+        setAuthMsg('❌ ' + errMsg);
       }
     } catch (e) {
       setAuthMsg('❌ Server error. Is backend running?');
@@ -80,8 +100,11 @@ function App() {
         body: JSON.stringify({ message })
       });
       const data = await res.json();
-      if (res.ok) setResult(data);
-      else alert('Error: ' + (data.detail || 'Scan failed'));
+      if (res.ok) {
+        setResult(data);
+      } else {
+        alert('Error: ' + (data.detail || 'Scan failed'));
+      }
     } catch (e) {
       alert('Network error. Is backend running?');
     }
