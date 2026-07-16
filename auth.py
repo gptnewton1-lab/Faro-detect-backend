@@ -1,3 +1,5 @@
+from __future__ import annotations  # <-- This fixes the forward reference issue
+
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -7,7 +9,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 
-from models import User, TokenData, get_session, ScanStatus  # ScanStatus is not used but kept for consistency
+from models import User, TokenData, get_session
 
 
 # =============================================================================
