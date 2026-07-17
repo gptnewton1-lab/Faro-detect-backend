@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const API_URL = "https://faro-detect-api-1.onrender.com";
 
@@ -8,7 +8,6 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -22,7 +21,6 @@ export default function Register() {
       });
       const data = await res.json();
       if (res.ok) {
-        // Auto-login after registration
         const loginRes = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -31,14 +29,14 @@ export default function Register() {
         const loginData = await loginRes.json();
         if (loginRes.ok) {
           localStorage.setItem('access_token', loginData.access_token);
-          navigate('/dashboard');
+          window.location.href = '/dashboard';
         } else {
-          navigate('/login');
+          window.location.href = '/login';
         }
       } else {
         setError(data.detail || 'Registration failed');
       }
-    } catch (err) {
+    } catch {
       setError('Server error. Is backend running?');
     }
     setLoading(false);
@@ -80,96 +78,7 @@ export default function Register() {
         <p className="text-center text-gray-400 text-sm mt-4">
           Already have an account? <Link to="/login" className="text-blue-400 hover:underline">Sign In</Link>
         </p>
-        <div className="mt-6 text-center text-xs text-gray-600 border-t border-gray-700 pt-4">
-          Built with ❤️ for Cameroon · Presidential ICT Prize 2026
-        </div>
       </div>
     </div>
   );
-}    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
-      <div className="bg-gray-800 p-8 rounded-2xl w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6">Sign In</h1>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 text-white focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 text-white focus:outline-none focus:border-blue-500"
-            required
-          />
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold disabled:opacity-50">
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-        </form>
-        <p className="text-center text-gray-400 mt-4 text-sm">
-          Don't have an account? <Link to="/register" className="text-blue-400 hover:underline">Register</Link>
-        </p>
-      </div>
-    </div>
-  );
-}          navigate('/login');
-        }
-      } else {
-        setError(data.detail || 'Registration failed');
-      }
-    } catch {
-      setError('Server error. Is backend running?');
-    }
-    setLoading(false);
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl p-8 rounded-3xl border border-white/10 shadow-2xl">
-        <div className="text-center mb-8">
-          <Link to="/" className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            🛡️ Faro-Detect
-          </Link>
-          <p className="text-gray-400 text-sm mt-1">Create your account</p>
-        </div>
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 bg-white/10 rounded-xl border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 bg-white/10 rounded-xl border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-            required
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition disabled:opacity-50"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-          {error && <p className="text-center text-sm text-red-400">{error}</p>}
-        </form>
-        <p className="text-center text-sm text-gray-400 mt-4">
-          Already have an account? <Link to="/login" className="text-blue-400 hover:underline">Sign In</Link>
-        </p>
-        <div className="mt-8 text-center text-xs text-gray-600 border-t border-white/5 pt-6">
-          Built with ❤️ for Cameroon · Presidential ICT Prize 2026
-        </div>
-      </div>
-    </div>
-  );
-}
+                                                                                                        }
