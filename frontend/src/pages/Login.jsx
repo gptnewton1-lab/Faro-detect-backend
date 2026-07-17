@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const API_URL = "https://faro-detect-api-1.onrender.com";
 
@@ -8,7 +8,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -23,11 +22,12 @@ export default function Login() {
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('access_token', data.access_token);
-        navigate('/dashboard');
+        // Force navigation with window.location
+        window.location.href = '/dashboard';
       } else {
         setError(data.detail || 'Login failed');
       }
-    } catch (err) {
+    } catch {
       setError('Server error. Is backend running?');
     }
     setLoading(false);
@@ -69,9 +69,6 @@ export default function Login() {
         <p className="text-center text-gray-400 text-sm mt-4">
           Don't have an account? <Link to="/register" className="text-blue-400 hover:underline">Register</Link>
         </p>
-        <div className="mt-6 text-center text-xs text-gray-600 border-t border-gray-700 pt-4">
-          Built with ❤️ for Cameroon · Presidential ICT Prize 2026
-        </div>
       </div>
     </div>
   );
