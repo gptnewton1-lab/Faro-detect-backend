@@ -1,1 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Faro-Detect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial; max-width: 500px; margin: 40px auto; padding: 20px; background: #0b1120; color: white; }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; background: #1a1a2e; color: white; }
+        button { background: #3b82f6; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background: #2563eb; }
+        .error { color: #ef4444; font-size: 14px; margin: 5px 0; }
+        .hidden { display: none; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; margin: 10px 0; }
+        .status-safe { color: #22c55e; }
+        .status-danger { color: #ef4444; }
+        .status-warning { color: #eab308; }
+    </style>
+</head>
+<body>
 
+    <h1>🛡️ Faro-Detect</h1>
+    <p style="color: #94a3b8;">Cameroon's Scam Detector</p>
+
+    <!-- ===== LANDING ===== -->
+    <div id="landing">
+        <button onclick="showLogin()">Sign In</button>
+        <button onclick="showRegister()" style="margin-top:10px; background:#22c55e;">Get Started</button>
+    </div>
+
+    <!-- ===== LOGIN ===== -->
+    <div id="loginPage" class="hidden">
+        <h2>Sign In</h2>
+        <input type="email" id="loginEmail" placeholder="Email">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <p id="loginError" class="error"></p>
+        <button onclick="login()">Sign In</button>
+        <p style="margin-top:10px;"><a href="#" onclick="showRegister()">Create account</a></p>
+    </div>
+
+    <!-- ===== REGISTER ===== -->
+    <div id="registerPage" class="hidden">
+        <h2>Create Account</h2>
+        <input type="email" id="registerEmail" placeholder="Email">
+        <input type="password" id="registerPassword" placeholder="Password">
+        <p id="registerError" class="error"></p>
+        <button onclick="register()">Create Account</button>
+        <p style="margin-top:10px;"><a href="#" onclick="showLogin()">Already have an account?</a></p>
+    </div>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div id="dashboard" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Dashboard</h2>
+            <button onclick="logout()" style="width:auto; background:#ef4444; padding:8px 16px;">Logout</button>
+        </div>
+        <div class="card">
+            <p>Welcome! Paste a suspicious message below.</p>
+            <textarea id="scanMessage" rows="4" placeholder="Paste suspicious SMS here..."></textarea>
+            <button onclick="scan()">🔍 Scan Message</button>
+            <div id="result" class="hidden" style="margin-top:15px; padding:15px; background:#0f172a; border-radius:8px;">
+                <p><strong>Risk Score:</strong> <span id="riskScore">0%</span></p>
+                <p><strong>Status:</strong> <span id="statusLabel">-</span></p>
+                <p><strong>Category:</strong> <span id="categoryLabel">-</span></p>
+                <p><strong>Reason:</strong> <span id="reasonLabel">-</span></p>
+            </div>
+        </div>
+        <div class="card">
+            <button onclick="fetchHistory()" style="background:#6366f1;">📜 View History</button>
+            <div id="historyList" style="margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.location.origin;
+
+        function showLogin() {
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'block';
+            document.getElementById('registerPage').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+        }
+
+        function showRegister() {
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('registerPage').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+        }
+
+        function showDashboard() {
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('registerPage').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        function showError(element, msg) {
+            document.getElementById(element).textContent = msg;
+        }
+
+        function clearError(element) {
+            document.getElementById(element).textContent = '';
+        }
+
+        // ===== REGISTER =====
+        async function register() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            clearError('registerError');
+
+            try {
+                const res = await fetch(`${API}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const loginRes = await fetch(`${API}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const loginData = await loginRes.json();
+                    if (loginRes.ok) {
+                        localStorage.setItem('token', loginData.access_token);
+                        showDashboard();
+                    } else {
+                        showLogin();
+                    }
+                } else {
+                    showError('registerError', data.detail || 'Registration failed');
+                }
+            } catch(e) {
+                showError('registerError', 'Network error. Is backend running?');
+            }
+        }
+
+        // ===== LOGIN =====
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            clearError('loginError');
+
+            try {
+                const res = await fetch(`${API}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    showDashboard();
+                } else {
+                    showError('loginError', data.detail || 'Login failed');
+                }
+            } catch(e) {
+                showError('loginError', 'Network error. Is backend running?');
+            }
+        }
+
+        // ===== LOGOUT =====
+        function logout() {
+            localStorage.removeItem('token');
+            showLogin();
+        }
+
+        // ===== SCAN =====
+        async function scan() {
+            const message = document.getElementById('scanMessage').value;
+            if (!message) return alert('Paste a message first');
+            const token = localStorage.getItem('token');
+
+            try {
+                const res = await fetch(`${API}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('riskScore').textContent = data.risk_score + '%';
+                    const statusEl = document.getElementById('statusLabel');
+                    statusEl.textContent = data.status;
+                    statusEl.className = data.status === 'SAFE' ? 'status-safe' : data.status === 'SUSPICIOUS' ? 'status-warning' : 'status-danger';
+                    document.getElementById('categoryLabel').textContent = data.scam_category || 'N/A';
+                    document.getElementById('reasonLabel').textContent = data.reason || 'No details';
+                } else {
+                    alert('Error: ' + (data.detail || 'Scan failed'));
+                }
+            } catch(e) {
+                alert('Network error');
+            }
+        }
+
+        // ===== HISTORY =====
+        async function fetchHistory() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API}/scan/history`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const list = document.getElementById('historyList');
+                if (!res.ok) { list.innerHTML = 'Could not load history'; return; }
+                if (data.length === 0) { list.innerHTML = 'No scans yet.'; return; }
+                list.innerHTML = data.map(item => 
+                    `<div style="padding:8px; margin:4px 0; background:#0f172a; border-radius:4px; display:flex; justify-content:space-between;">
+                        <span>${item.message.substring(0, 40)}...</span>
+                        <span style="color:${item.status === 'SAFE' ? '#22c55e' : '#ef4444'}">${item.status}</span>
+                    </div>`
+                ).join('');
+            } catch(e) {
+                document.getElementById('historyList').innerHTML = 'Network error';
+            }
+        }
+
+        // ===== AUTO-LOGIN =====
+        if (localStorage.getItem('token')) {
+            showDashboard();
+        } else {
+            showLogin();
+        }
+    </script>
+
+</body>
+  </html>
