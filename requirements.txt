@@ -1,1 +1,6 @@
-
+fastapi
+uvicorn
+sqlmodel
+passlib
+pyjwt
+python-multipart
