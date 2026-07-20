@@ -207,15 +207,15 @@ app.add_middleware(
 )
 
 # =============================================================================
-# SERVE FRONTEND FROM "frontend/" FOLDER
+# SERVE FRONTEND (if index.html exists)
 # =============================================================================
 @app.get("/", response_class=HTMLResponse)
 async def serve_frontend():
     try:
         with open("frontend/index.html", "r") as f:
             return f.read()
-    except FileNotFoundError:
-        return {"message": "Frontend not found. Please add index.html to the frontend/ folder."}
+    except:
+        return {"message": "Faro-Detect API is live. Use /docs for Swagger UI."}
 
 @app.on_event("startup")
 def on_startup():
@@ -225,7 +225,7 @@ def on_startup():
 # API ENDPOINTS
 # =============================================================================
 @app.get("/health")
-def read_root():
+def health():
     return {"status": "ok", "service": "Faro-Detect API"}
 
 @app.post("/auth/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
